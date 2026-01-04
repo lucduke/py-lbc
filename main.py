@@ -75,19 +75,15 @@ def main():
             bs_content = url_scrapper(url)
             # url1_main()
             for annonce in bs_content.find_all("a", class_="absolute inset-0", attrs={"aria-label": "Voir l’annonce"}):
-                link = annonce.get("href")
-                print(link)
-                
-                title = annonce.find("span").get("title")
-                print(title)
-                
                 #print(annonce)
+                link = annonce.get("href")
+                #print(link)
+                title = annonce.find("span").get("title").removeprefix("Voir l’annonce: ").strip()
+                #print(title)
+                print(f"Titre: {title}, Lien: {link}")
 
-            for annonce in bs_content.find_all("articlexxxxxx", class_="adCard"):
-                title = annonce.find("h2", class_="adCardTitle")
-                price = annonce.find("div", class_="adCardPrice")
-                if title and price:
-                    print(f"Titre: {title.get_text(strip=True)}, Prix: {price.get_text(strip=True)}")
+            for annonce in bs_content.find_all("article", class_="relative h-[inherit] group/adcard"):
+                print(annonce)
 
         if args.url2:
             logging.info("Démarrage du scrapping pour le site URL2")
