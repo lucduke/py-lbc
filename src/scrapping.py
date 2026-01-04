@@ -43,4 +43,40 @@ def url_scrapper(url: str, headers: dict | None = None, timeout: int = 10):
     soup = BeautifulSoup(response.content, 'html.parser')
     return soup
 
+def results_scrapper(soup: BeautifulSoup, tag: str, class_name: str, attrs: dict | None = None):
+    """
+    Extrait les résultats de la page scrappée
+    
+    Args:
+        soup (BeautifulSoup): objet soup de la page
+        tag (str): balise HTML à rechercher
+        class_name (str): nom de la classe CSS à rechercher
+        attrs (dict, optional): autres attributs HTML à rechercher
+    
+    Returns:
+        list: liste des éléments trouvés
+    """
+    if attrs is None:
+        attrs = {}
+    results = soup.find_all(tag, class_=class_name, attrs=attrs)
+    return results
 
+def article_scrapper(soup: BeautifulSoup):
+    """
+    Extrait les informations d'un article spécifique
+    
+    Args:
+        article (BeautifulSoup): objet soup de l'article
+        tag (str): balise HTML à rechercher
+        class_name (str): nom de la classe CSS à rechercher
+        attrs (dict, optional): autres attributs HTML à rechercher
+    
+    Returns:
+        dict: dictionnaire des informations extraites
+    """
+    link = soup.find("a", class_="absolute inset-0", attrs={"aria-label": "Voir l’annonce"}).get("href")
+    title = soup.find("h3").get_text().strip()
+    year = ""
+    actualprice = ""
+    mileage = ""
+    return {"link": link, "title": title, "year": year, "actualprice": actualprice, "mileage": mileage}

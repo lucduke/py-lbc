@@ -71,19 +71,16 @@ def main():
             # Get url1 value from config
             url = config.get("url1")
             # Call the scrapping function for URL1
-            from src.scrapping import url_scrapper
+            from src.scrapping import url_scrapper, results_scrapper, article_scrapper
             bs_content = url_scrapper(url)
-            # url1_main()
-            for annonce in bs_content.find_all("a", class_="absolute inset-0", attrs={"aria-label": "Voir l’annonce"}):
-                #print(annonce)
-                link = annonce.get("href")
-                #print(link)
-                title = annonce.find("span").get("title").removeprefix("Voir l’annonce: ").strip()
-                #print(title)
-                print(f"Titre: {title}, Lien: {link}")
+            # List the articles in the page
+            articles = results_scrapper(bs_content, "article", "relative h-[inherit] group/adcard")
+            logging.info(f"Nombre d'annonces trouvées sur la page : {len(articles)}")
+            # pp
+            for article in articles:
+                announcement = article_scrapper(article)
+                #logging.info(f"Titre: {title}, Lien: {link}, Année: {year}, Prix: {actualprice}, Kilométrage: {mileage}")
 
-            for annonce in bs_content.find_all("article", class_="relative h-[inherit] group/adcard"):
-                print(annonce)
 
         if args.url2:
             logging.info("Démarrage du scrapping pour le site URL2")
