@@ -68,10 +68,27 @@ def main():
 
         if args.url1:
             logging.info("Démarrage du scrapping pour le site URL1")
+            # Get url1 value from config
+            url = config.get("url1")
             # Call the scrapping function for URL1
-            # from scrapping.url1_scraper import main as url1_main
+            from src.scrapping import url_scrapper
+            bs_content = url_scrapper(url)
             # url1_main()
-        
+            for annonce in bs_content.find_all("a", class_="absolute inset-0", attrs={"aria-label": "Voir l’annonce"}):
+                link = annonce.get("href")
+                print(link)
+                
+                title = annonce.find("span").get("title")
+                print(title)
+                
+                #print(annonce)
+
+            for annonce in bs_content.find_all("articlexxxxxx", class_="adCard"):
+                title = annonce.find("h2", class_="adCardTitle")
+                price = annonce.find("div", class_="adCardPrice")
+                if title and price:
+                    print(f"Titre: {title.get_text(strip=True)}, Prix: {price.get_text(strip=True)}")
+
         if args.url2:
             logging.info("Démarrage du scrapping pour le site URL2")
             # Call the scrapping function for URL2

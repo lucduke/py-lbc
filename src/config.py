@@ -6,6 +6,7 @@ Module pour gérer les fonctions liées au fichier de configuration
 import json
 import os
 from typing import Any, Dict
+
 def load_config(config_path: str) -> Dict[str, Any]:
     """
     Charge le fichier de configuration JSON
