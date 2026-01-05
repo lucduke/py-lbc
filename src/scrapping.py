@@ -77,6 +77,12 @@ def article_scrapper(soup: BeautifulSoup):
     link = soup.find("a", class_="absolute inset-0", attrs={"aria-label": "Voir l’annonce"}).get("href")
     title = soup.find("h3").get_text().strip()
     year = ""
-    actualprice = ""
+    
+    actual_price_text = soup.find('p', attrs={"data-test-id": "price"}).span.get_text(strip=True)
+    if actual_price_text:
+        actualprice = int(actual_price_text.replace("\u202f", "").replace("€", ""))
+    else:
+        actualprice = None
+    
     mileage = ""
     return {"link": link, "title": title, "year": year, "actualprice": actualprice, "mileage": mileage}

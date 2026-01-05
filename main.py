@@ -79,6 +79,7 @@ def main():
             # pp
             for article in articles:
                 announcement = article_scrapper(article)
+                print(announcement)
                 #logging.info(f"Titre: {title}, Lien: {link}, Année: {year}, Prix: {actualprice}, Kilométrage: {mileage}")
 
 
