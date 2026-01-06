@@ -43,6 +43,7 @@ def url_scrapper(url: str, headers: dict | None = None, timeout: int = 10):
     soup = BeautifulSoup(response.content, 'html.parser')
     return soup
 
+
 def results_scrapper(soup: BeautifulSoup, tag: str, class_name: str, attrs: dict | None = None):
     """
     Extrait les résultats de la page scrappée
@@ -61,6 +62,7 @@ def results_scrapper(soup: BeautifulSoup, tag: str, class_name: str, attrs: dict
     results = soup.find_all(tag, class_=class_name, attrs=attrs)
     return results
 
+
 def article_scrapper(soup: BeautifulSoup):
     """
     Extrait les informations d'un article spécifique
@@ -76,13 +78,15 @@ def article_scrapper(soup: BeautifulSoup):
     """
     link = soup.find("a", class_="absolute inset-0", attrs={"aria-label": "Voir l’annonce"}).get("href")
     title = soup.find("h3").get_text().strip()
-    year = ""
+    year = int(soup.find("p", class_="text-neutral", string="Année").find_next_sibling("p").get_text(strip=True))
     
-    actual_price_text = soup.find('p', attrs={"data-test-id": "price"}).span.get_text(strip=True)
-    if actual_price_text:
-        actualprice = int(actual_price_text.replace("\u202f", "").replace("€", ""))
+    current_price_text = soup.find('p', attrs={"data-test-id": "price"}).span.get_text(strip=True)
+    if current_price_text:
+        current_price = int(current_price_text.replace("\u202f", "").replace("€", ""))
     else:
-        actualprice = None
-    
-    mileage = ""
-    return {"link": link, "title": title, "year": year, "actualprice": actualprice, "mileage": mileage}
+        current_price = None
+
+    mileage = int(soup.find("p", class_="text-neutral", string="Kilométrage").find_next_sibling("p").get_text(strip=True).replace(" km",""))
+    gearbox = soup.find("p", class_="text-neutral", string="Boîte de vitesse").find_next_sibling("p").get_text(strip=True)
+
+    return {"link": link, "title": title, "year": year, "current_price": current_price, "mileage": mileage, "gearbox": gearbox}

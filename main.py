@@ -10,6 +10,10 @@ Usage:
 # Dependencies
 import logging
 import argparse
+import time
+from src.config import load_config
+from src.scrapping import url_scrapper, results_scrapper, article_scrapper
+from src.car import Car
 
 # Logging configuration
 logging.basicConfig(
@@ -62,7 +66,6 @@ def main():
 
         # Load the configuration
         logging.info("Chargement de la configuration")
-        from src.config import load_config
         config = load_config("config.json")
         logging.info("Configuration chargée avec succès")
 
@@ -71,17 +74,33 @@ def main():
             # Get url1 value from config
             url = config.get("url1")
             # Call the scrapping function for URL1
-            from src.scrapping import url_scrapper, results_scrapper, article_scrapper
-            bs_content = url_scrapper(url)
-            # List the articles in the page
-            articles = results_scrapper(bs_content, "article", "relative h-[inherit] group/adcard")
-            logging.info(f"Nombre d'annonces trouvées sur la page : {len(articles)}")
-            # pp
-            for article in articles:
-                announcement = article_scrapper(article)
-                print(announcement)
-                #logging.info(f"Titre: {title}, Lien: {link}, Année: {year}, Prix: {actualprice}, Kilométrage: {mileage}")
+            # Loop through pages until url is None
+            while url:
+                print(f"\n")
+                logging.info(f"\033[34mScrapping de la page : {url}\033[0m")
+                # Get the BeautifulSoup content of the page
+                page_content = url_scrapper(url)
+                # Get next page link if exists
+                try:
+                    next_page = page_content.find("a", attrs={"aria-label": "Page suivante"}).get("href")
+                    next_page = "https://www.leboncoin.fr" + next_page
+                    url = next_page
+                except AttributeError:
+                    next_page = None
+                    url = next_page
+                # List the articles in the page
+                articles = results_scrapper(page_content, "article", "relative h-[inherit] group/adcard")
+                logging.info(f"Nombre d'annonces trouvées sur la page : {len(articles)}")
+                # Parse each article in the page
+                for article in articles:
+                    announcement = article_scrapper(article)
+                    #print(announcement)
+                    # Init car object with values of announcement    
+                    car = Car.from_dict(announcement)
+                    # Store car objects in a list before saving to database or file
 
+                # Pause between page requests to avoid being blocked
+                time.sleep(2)
 
         if args.url2:
             logging.info("Démarrage du scrapping pour le site URL2")
