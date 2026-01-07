@@ -1,4 +1,5 @@
 {
     "url1": "https://www.leboncoin.fr/recherche?category=2&regdate=2008-max&u_car_brand=PORSCHE&u_car_model=PORSCHE_911&sort=price&order=asc&page=1",
-    "url2": "https://www.google.com"
+    "url2": "https://www.google.com",
+    "database_path": "cars.db"
 }

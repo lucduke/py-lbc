@@ -89,4 +89,21 @@ def article_scrapper(soup: BeautifulSoup):
     mileage = int(soup.find("p", class_="text-neutral", string="Kilométrage").find_next_sibling("p").get_text(strip=True).replace(" km",""))
     gearbox = soup.find("p", class_="text-neutral", string="Boîte de vitesse").find_next_sibling("p").get_text(strip=True)
 
-    return {"link": link, "title": title, "year": year, "current_price": current_price, "mileage": mileage, "gearbox": gearbox}
+    return {"link": link, "title": title, "year": year, "original_price": None, "current_price": current_price, "mileage": mileage, "gearbox": gearbox}
+
+def article_scrapper_find_old_price(soup: BeautifulSoup):
+    """
+    Extrait le prix original d'un article spécifique
+    
+    Args:
+        article (BeautifulSoup): objet soup de l'article
+    
+    Returns:
+        float | None: prix original ou None si non trouvé
+    """
+    old_price_tag = soup.find('script', type="application/json")
+    if old_price_tag:
+        old_price_text = old_price_tag.get_text(strip=True)
+        old_price = float(old_price_text.replace("\u202f", "").replace("€", ""))
+        return old_price
+    return None
