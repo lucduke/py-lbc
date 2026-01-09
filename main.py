@@ -12,7 +12,7 @@ import logging
 import argparse
 import time
 from src.config import load_config
-from src.scrapping import article_scrapper_find_old_price, url_scrapper, results_scrapper, article_scrapper
+from src.scrapping import article_scrapper_find_old_price_and_first_publication_date, url_scrapper, results_scrapper, article_scrapper
 from src.cars import Cars
 from src.cars_dao import CarsDAO
 
@@ -41,7 +41,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--url1",
         action="store_true",
-        help="Lance le scrapping pour le site URL1"
+        help="Lance le scrapping pour le site LeBonCoin.fr"
     )
     
     parser.add_argument(
@@ -77,13 +77,15 @@ def main():
 
         # Scrapping for URL1
         if args.url1:
-            logging.info("Démarrage du scrapping pour le site URL1")
-            # Get url1 value from config
+            logging.info("Démarrage du scrapping pour le site LeBonCoin.fr")
+            # Get values from config
+            brand_filter = config.get("brand_filter", "")
+            model_filter = config.get("model_filter", "")
             url = config.get("url1")
+            url = url.replace("u_car_brand=?", f"u_car_brand={brand_filter}").replace("u_car_model=?", f"u_car_model={model_filter}")
             # Call the scrapping function for URL1
             # Loop through pages until url is None
             while url:
-                print(f"\n")
                 logging.info(f"\033[34mScrapping de la page : {url}\033[0m")
                 # Get the BeautifulSoup content of the page
                 page_content = url_scrapper(url)
@@ -105,6 +107,8 @@ def main():
                     announcement = article_scrapper(article)
                     # Init car object with values of announcement    
                     car = Cars.from_dict(announcement)
+                    car.brand = brand_filter
+                    car.model = model_filter
                     #logging.info(f"Annonce scrappée : {car}")
                     # Store car objects in a list
                     list_car.append(car)
@@ -113,8 +117,8 @@ def main():
                     # Check if car already exists in database to avoid duplicates
                     existing_cars = cars_dao.get_all_cars()
                     if any(existing_car.link == car.link for existing_car in existing_cars):
-                        logging.info(f"L'annonce existe déjà dans la base de données : {car.link}. Mise à jour de l'annonce en BDD.")
-                        cars_dao.update_car(car)
+                        logging.info(f"L'annonce existe déjà dans la base de données : {car.link}. Mise à jour du prix de l'annonce en BDD.")
+                        cars_dao.update_car_current_price(car.link, car.current_price)
                         continue
                     else:
                         cars_dao.insert_car(car)
@@ -126,20 +130,27 @@ def main():
             for car in all_cars:
                 if car.original_price is None or car.original_price == 0.0:
                     logging.info(f"Recherche du prix original pour l'annonce : {car.link}")
-                    # Scrape the article page to find the original price
+                    # Scrape the article page to find the original price and first publication date
                     url = "https://www.leboncoin.fr" + car.link
                     article_page = url_scrapper(url)
-                    original_price = article_scrapper_find_old_price(article_page)
+                    if article_page is None:
+                        logging.error(f"Impossible de récupérer la page de l'annonce : {car.link}")
+                        continue
+                    original_price, first_publication_date = article_scrapper_find_old_price_and_first_publication_date(article_page)
                     if original_price:
                         car.original_price = original_price
                         cars_dao.update_car(car)
                         logging.info(f"Prix original mis à jour pour l'annonce : {car.link} - Prix original : {car.original_price}€")
                     else:
-                        logging.warning(f"Impossible de trouver le prix original pour l'annonce : {car.link}")
+                        car.original_price = car.current_price
+                        cars_dao.update_car(car)
+                        logging.info(f"Prix original mis à jour avec prix courant pour l'annonce : {car.link} - Prix original : {car.original_price}€")
+                    if first_publication_date:
+                        car.first_publication_date = first_publication_date
+                        cars_dao.update_car_first_publication_date(car.link, first_publication_date)
+                        logging.info(f"Date de première publication trouvée pour l'annonce : {car.link} - Date : {first_publication_date}")
                     # Pause between requests
-                    time.sleep(1)
-        
-        
+                    time.sleep(2)
         # Scrapping for URL2
         if args.url2:
             logging.info("Démarrage du scrapping pour le site URL2")

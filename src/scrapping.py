@@ -1,10 +1,12 @@
-import requests
-from bs4 import BeautifulSoup
-
 #!/usr/bin/env python3
 """
 Module pour gérer les fonctions liées au scrapping
 """
+
+from datetime import datetime
+import requests
+import json
+from bs4 import BeautifulSoup
 
 def url_scrapper(url: str, headers: dict | None = None, timeout: int = 10):
     """
@@ -38,8 +40,16 @@ def url_scrapper(url: str, headers: dict | None = None, timeout: int = 10):
     session.mount("https://", adapter)
     session.mount("http://", adapter)
 
-    response = session.get(url, timeout=timeout)
-    response.raise_for_status()
+    try:
+        response = session.get(url, timeout=timeout)
+        response.raise_for_status()
+    except requests.exceptions.HTTPError as e:
+        print(f"HTTP error occurred: {e}")
+        return None
+    except requests.exceptions.RequestException as e:
+        print(f"Request error occurred: {e}")
+        return None
+    
     soup = BeautifulSoup(response.content, 'html.parser')
     return soup
 
@@ -89,21 +99,36 @@ def article_scrapper(soup: BeautifulSoup):
     mileage = int(soup.find("p", class_="text-neutral", string="Kilométrage").find_next_sibling("p").get_text(strip=True).replace(" km",""))
     gearbox = soup.find("p", class_="text-neutral", string="Boîte de vitesse").find_next_sibling("p").get_text(strip=True)
 
-    return {"link": link, "title": title, "year": year, "original_price": None, "current_price": current_price, "mileage": mileage, "gearbox": gearbox}
+    return {"brand": "", "model": "", "link": link, "title": title, "year": year, "original_price": None, "current_price": current_price, "mileage": mileage, "gearbox": gearbox}
 
-def article_scrapper_find_old_price(soup: BeautifulSoup):
+def article_scrapper_find_old_price_and_first_publication_date(soup: BeautifulSoup):
     """
-    Extrait le prix original d'un article spécifique
+    Extrait le prix original d'un article spécifique et la date de première publication
     
     Args:
         article (BeautifulSoup): objet soup de l'article
     
     Returns:
         float | None: prix original ou None si non trouvé
+        datetime | None: date de première publication ou None si non trouvée
     """
-    old_price_tag = soup.find('script', type="application/json")
-    if old_price_tag:
-        old_price_text = old_price_tag.get_text(strip=True)
-        old_price = float(old_price_text.replace("\u202f", "").replace("€", ""))
-        return old_price
-    return None
+    tag = soup.find('script', type="application/json")
+    if tag:
+        data = json.loads(tag.get_text(strip=True))
+        
+        try:
+            list_dictionnaire = data['props']['pageProps']['ad']['attributes']
+            old_price = next((item['value'] for item in list_dictionnaire if item['key'] == 'old_price'), None)
+            if old_price is not None:
+                old_price = float(old_price)
+        except (KeyError, TypeError):
+            old_price = None
+        
+        try:
+            first_publication_date_str = data['props']['pageProps']['ad']['first_publication_date']
+            first_publication_date = datetime.strptime(first_publication_date_str, "%Y-%m-%d %H:%M:%S")
+        except (KeyError, TypeError):
+            first_publication_date = None
+        
+        return old_price, first_publication_date
+    return None, None

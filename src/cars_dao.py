@@ -17,6 +17,8 @@ class CarsDAO:
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS cars (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    brand TEXT,
+                    model TEXT,
                     link TEXT,
                     title TEXT,
                     year INTEGER,
@@ -24,6 +26,7 @@ class CarsDAO:
                     current_price REAL,
                     mileage INTEGER,
                     gearbox TEXT,
+                    first_publication_date TIMESTAMP DEFAULT NULL,
                     update_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
             """)
@@ -33,17 +36,17 @@ class CarsDAO:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO cars (link, title, year, original_price, current_price, mileage, gearbox, update_date)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (car.link, car.title, car.year, car.original_price, car.current_price, car.mileage, car.gearbox, date.today()))
+                INSERT INTO cars (brand, model, link, title, year, original_price, current_price, mileage, gearbox, first_publication_date, update_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (car.brand, car.model, car.link, car.title, car.year, car.original_price, car.current_price, car.mileage, car.gearbox, car.first_publication_date, date.today()))
             conn.commit()
     
     def get_all_cars(self) -> list[Cars]:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT link, title, year, original_price, current_price, mileage, gearbox, update_date FROM cars")
+            cursor.execute("SELECT brand, model, link, title, year, original_price, current_price, mileage, gearbox, first_publication_date, update_date FROM cars")
             rows = cursor.fetchall()
-            cars = [Cars(link=row[0], title=row[1], year=row[2], original_price=row[3], current_price=row[4], mileage=row[5], gearbox=row[6]) for row in rows]
+            cars = [Cars(brand=row[0], model=row[1], link=row[2], title=row[3], year=row[4], original_price=row[5], current_price=row[6], mileage=row[7], gearbox=row[8], first_publication_date=row[9], update_date=row[10]) for row in rows]
             return cars
     
     def update_car(self, car: Cars):
@@ -51,7 +54,27 @@ class CarsDAO:
             cursor = conn.cursor()
             cursor.execute("""
                 UPDATE cars
-                SET title = ?, year = ?, original_price = ?, current_price = ?, mileage = ?, gearbox = ?, update_date = ?
+                SET brand = ?, model = ?, title = ?, year = ?, original_price = ?, current_price = ?, mileage = ?, gearbox = ?, first_publication_date = ?, update_date = ?
                 WHERE link = ?
-            """, (car.title, car.year, car.original_price, car.current_price, car.mileage, car.gearbox, date.today(), car.link))
+            """, (car.brand, car.model, car.title, car.year, car.original_price, car.current_price, car.mileage, car.gearbox, car.first_publication_date, date.today(), car.link))
+            conn.commit()
+    
+    def update_car_current_price(self, link: str, current_price: float):
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE cars
+                SET current_price = ?, update_date = ?
+                WHERE link = ?
+            """, (current_price, date.today(), link))
+            conn.commit()
+    
+    def update_car_first_publication_date(self, link: str, first_publication_date):
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE cars
+                SET first_publication_date = ?, update_date = ?
+                WHERE link = ?
+            """, (first_publication_date, date.today(), link))
             conn.commit()
