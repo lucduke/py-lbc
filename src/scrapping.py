@@ -72,35 +72,9 @@ def results_scrapper(soup: BeautifulSoup, tag: str, class_name: str, attrs: dict
     results = soup.find_all(tag, class_=class_name, attrs=attrs)
     return results
 
-
-def article_scrapper(soup: BeautifulSoup):
+def results_scrapper_detail(soup: BeautifulSoup, list_var: list):
     """
-    Extrait les informations d'un article spécifique
-    
-    Args:
-        article (BeautifulSoup): objet soup de l'article
-    
-    Returns:
-        dict: dictionnaire des informations extraites
-    """
-    link = soup.find("a", class_="absolute inset-0", attrs={"aria-label": "Voir l’annonce"}).get("href")
-    title = soup.find("h3").get_text().strip()
-    year = int(soup.find("p", class_="text-neutral", string="Année").find_next_sibling("p").get_text(strip=True))
-    
-    current_price_text = soup.find('p', attrs={"data-test-id": "price"}).span.get_text(strip=True)
-    if current_price_text:
-        current_price = int(current_price_text.replace("\u202f", "").replace("€", ""))
-    else:
-        current_price = None
-
-    mileage = int(soup.find("p", class_="text-neutral", string="Kilométrage").find_next_sibling("p").get_text(strip=True).replace(" km",""))
-    gearbox = soup.find("p", class_="text-neutral", string="Boîte de vitesse").find_next_sibling("p").get_text(strip=True)
-
-    return {"brand": "", "model": "", "link": link, "title": title, "year": year, "original_price": None, "current_price": current_price, "mileage": mileage, "gearbox": gearbox}
-
-def article_scrapper_v2(soup: BeautifulSoup, list_var: list):
-    """
-    Extrait les informations d'un article spécifique. Les variables attendues sont contenues dans un dictionnaire de données
+    Extrait dans la page de résultat les informations d'un article spécifique. Les variables attendues sont contenues dans un dictionnaire de données
     
     Args:
         article (BeautifulSoup): objet soup de l'article
@@ -169,3 +143,38 @@ def article_scrapper_find_old_price_and_first_publication_date(soup: BeautifulSo
         
         return old_price, first_publication_date
     return None, None
+
+def article_scrapper(article: BeautifulSoup, list_var: list):
+    """
+    Extrait les informations d'un article spécifique. Les variables attendues sont contenues dans un dictionnaire de données
+    
+    Args:
+        article (BeautifulSoup): objet soup de l'article
+        list_var (list): liste contenant les variables attendues
+    
+    Returns:
+        dict: dictionnaire des informations extraites
+    """
+
+    # initialisation des variables attendues
+    old_price = None
+    first_publication_date = None
+
+    tag = soup.find('script', type="application/json")
+    if tag:
+        data = json.loads(tag.get_text(strip=True))
+        
+        try:
+            for var in list_var:
+                if var == "old_price":
+                    list_dictionnaire = data['props']['pageProps']['ad']['attributes']
+                    old_price = next((item['value'] for item in list_dictionnaire if item['key'] == 'old_price'), None)
+                    if old_price is not None:
+                        old_price = float(old_price)
+                elif var == "first_publication_date":
+                    first_publication_date_str = data['props']['pageProps']['ad']['first_publication_date']
+                    first_publication_date = datetime.strptime(first_publication_date_str, "%Y-%m-%d %H:%M:%S")
+        except (KeyError, TypeError):
+            pass
+        return {"old_price": old_price, "first_publication_date": first_publication_date}
+    return {"old_price": None, "first_publication_date": None}

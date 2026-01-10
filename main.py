@@ -12,7 +12,7 @@ import logging
 import argparse
 import time
 from src.config import load_config
-from src.scrapping import article_scrapper_find_old_price_and_first_publication_date, article_scrapper_v2, url_scrapper, results_scrapper, article_scrapper
+from src.scrapping import url_scrapper, results_scrapper, results_scrapper_detail, article_scrapper
 from src.cars import Cars
 from src.cars_dao import CarsDAO
 
@@ -105,7 +105,7 @@ def main():
                 # Parse each article in the page
                 for article in articles:
                     #announcement = article_scrapper(article)
-                    announcement = article_scrapper_v2(article, ["link", "title", "year", "current_price", "mileage", "gearbox"])
+                    announcement = results_scrapper_detail(article, ["link", "title", "year", "current_price", "mileage", "gearbox"])
                     # Merge both dictionaries
                     # Init car object with values of announcement    
                     car = Cars.from_dict(announcement)
@@ -138,7 +138,8 @@ def main():
                     if article_page is None:
                         logging.error(f"Impossible de récupérer la page de l'annonce : {car.link}")
                         continue
-                    original_price, first_publication_date = article_scrapper_find_old_price_and_first_publication_date(article_page)
+                    #original_price, first_publication_date = article_scrapper_find_old_price_and_first_publication_date(article_page)
+                    original_price, first_publication_date = article_scrapper(article_page, ["old_price", "first_publication_date"])
                     if original_price:
                         car.original_price = original_price
                         cars_dao.update_car(car)
@@ -157,6 +158,13 @@ def main():
         # Calculate statistics
         if args.calculate_stats:
             logging.info("Démarrage du calcul des statistiques sur les données scrappées")
+            statistics = cars_dao.calculate_statistics()
+            for stat, value in statistics.items():
+                logging.info(f"{stat} : {value}")
+            # Export statistics to a csv file
+            stats_file = config.get("statistics_file", "statistics.csv")
+            cars_dao.export_statistics_to_csv(statistics, stats_file)
+            logging.info("Statistiques calculées avec succès")
     
     except Exception as e:
         logging.error(f"Erreur fatale: {e}")

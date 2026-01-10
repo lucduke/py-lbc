@@ -3,6 +3,7 @@
 Module pour gérer la persistance de la classe Cars dans une base de données sqlite
 """
 import sqlite3
+import csv
 from src.cars import Cars
 from datetime import date
 
@@ -78,3 +79,33 @@ class CarsDAO:
                 WHERE link = ?
             """, (first_publication_date, date.today(), link))
             conn.commit()
+    
+    def calculate_statistics(self) -> dict:
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT brand, model, year, gearbox, round(AVG(current_price)) AS moyenne_prix, round(AVG(mileage)) as moyenne_km \
+                           FROM cars \
+                           WHERE update_date=(select max(update_date) from cars) \
+                           GROUP BY brand, model, year, gearbox;")
+            # Return statistics as a dictionary keyed by 'brand|model|year|gearbox'
+            rows = cursor.fetchall()
+            statistics = {}
+            for row in rows:
+                key = f"{row[0]}|{row[1]}|{row[2]}|{row[3]}"
+                statistics[key] = {
+                    "brand": row[0],
+                    "model": row[1],
+                    "year": row[2],
+                    "gearbox": row[3],
+                    "average_price": row[4],
+                    "average_mileage": row[5]
+                }
+            return statistics
+
+    def export_statistics_to_csv(self, statistics: dict, file_path: str):
+        with open(file_path, mode='w', newline='', encoding='utf-8') as csvfile:
+            fieldnames = ['brand', 'model', 'year', 'gearbox', 'average_price', 'average_mileage']
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            for stat in statistics.values():
+                writer.writerow(stat)

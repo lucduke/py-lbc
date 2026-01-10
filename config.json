@@ -2,5 +2,6 @@
     "url": "https://www.leboncoin.fr/recherche?category=2&regdate=2008-max&price=min-100000&u_car_brand=?&u_car_model=?&sort=price&order=asc",
     "database_path": "cars.db",
     "brand_filter": "PORSCHE",
-    "model_filter": "PORSCHE_911"
+    "model_filter": "PORSCHE_911",
+    "statistics_file": "statistics.csv"
 }
