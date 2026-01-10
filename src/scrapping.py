@@ -79,9 +79,6 @@ def article_scrapper(soup: BeautifulSoup):
     
     Args:
         article (BeautifulSoup): objet soup de l'article
-        tag (str): balise HTML à rechercher
-        class_name (str): nom de la classe CSS à rechercher
-        attrs (dict, optional): autres attributs HTML à rechercher
     
     Returns:
         dict: dictionnaire des informations extraites
@@ -98,6 +95,46 @@ def article_scrapper(soup: BeautifulSoup):
 
     mileage = int(soup.find("p", class_="text-neutral", string="Kilométrage").find_next_sibling("p").get_text(strip=True).replace(" km",""))
     gearbox = soup.find("p", class_="text-neutral", string="Boîte de vitesse").find_next_sibling("p").get_text(strip=True)
+
+    return {"brand": "", "model": "", "link": link, "title": title, "year": year, "original_price": None, "current_price": current_price, "mileage": mileage, "gearbox": gearbox}
+
+def article_scrapper_v2(soup: BeautifulSoup, list_var: list):
+    """
+    Extrait les informations d'un article spécifique. Les variables attendues sont contenues dans un dictionnaire de données
+    
+    Args:
+        article (BeautifulSoup): objet soup de l'article
+        list_var (list): liste contenant les variables attendues
+    
+    Returns:
+        dict: dictionnaire des informations extraites
+    """
+
+    # initialisation des variables attendues
+    link = None
+    title = None
+    year = None
+    current_price = None
+    mileage = None
+    gearbox = None
+
+    for var in list_var:
+        if var == "link":
+            link = soup.find("a", class_="absolute inset-0", attrs={"aria-label": "Voir l’annonce"}).get("href")
+        elif var == "title":
+            title = soup.find("h3").get_text().strip()
+        elif var == "year":
+            year = int(soup.find("p", class_="text-neutral", string="Année").find_next_sibling("p").get_text(strip=True))
+        elif var == "current_price":
+            current_price_text = soup.find('p', attrs={"data-test-id": "price"}).span.get_text(strip=True)
+            if current_price_text:
+                current_price = int(current_price_text.replace("\u202f", "").replace("€", ""))
+            else:
+                current_price = None
+        elif var == "mileage":
+            mileage = int(soup.find("p", class_="text-neutral", string="Kilométrage").find_next_sibling("p").get_text(strip=True).replace(" km",""))
+        elif var == "gearbox":
+            gearbox = soup.find("p", class_="text-neutral", string="Boîte de vitesse").find_next_sibling("p").get_text(strip=True)
 
     return {"brand": "", "model": "", "link": link, "title": title, "year": year, "original_price": None, "current_price": current_price, "mileage": mileage, "gearbox": gearbox}
 

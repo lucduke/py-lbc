@@ -12,7 +12,7 @@ import logging
 import argparse
 import time
 from src.config import load_config
-from src.scrapping import article_scrapper_find_old_price_and_first_publication_date, url_scrapper, results_scrapper, article_scrapper
+from src.scrapping import article_scrapper_find_old_price_and_first_publication_date, article_scrapper_v2, url_scrapper, results_scrapper, article_scrapper
 from src.cars import Cars
 from src.cars_dao import CarsDAO
 
@@ -39,15 +39,15 @@ def parse_args() -> argparse.Namespace:
     )
     
     parser.add_argument(
-        "--url1",
+        "--grab-data",
         action="store_true",
         help="Lance le scrapping pour le site LeBonCoin.fr"
     )
     
     parser.add_argument(
-        "--url2",
+        "--calculate-stats",
         action="store_true",
-        help="Lance le scrapping pour le site URL2"
+        help="Calcule les statistiques sur les données scrappées"
     )
     
     return parser.parse_args()
@@ -57,9 +57,9 @@ def main():
     # Parse command line arguments
     args = parse_args()
     
-    if not args.url1 and not args.url2:
-        logging.warning("Aucun site spécifié pour le scrapping. Veuillez utiliser --url1 ou --url2.")
-        print("Usage: python src/main.py --url1 ou python src/main.py --url2")
+    if not args.grab_data and not args.calculate_stats:
+        logging.warning("Aucun paramètre spécifié. Veuillez utiliser --grab-data ou --calculate-stats.")
+        print("Usage: python src/main.py --grab-data ou python src/main.py --calculate-stats")
         return
 
     try:
@@ -75,18 +75,18 @@ def main():
         logging.info(f"Initialisation de la base de données à {database_path}")
         cars_dao = CarsDAO(database_path)
 
-        # Scrapping for URL1
-        if args.url1:
+        # Scrapping
+        if args.grab_data:
             logging.info("Démarrage du scrapping pour le site LeBonCoin.fr")
             # Get values from config
             brand_filter = config.get("brand_filter", "")
             model_filter = config.get("model_filter", "")
-            url = config.get("url1")
+            url = config.get("url")
             url = url.replace("u_car_brand=?", f"u_car_brand={brand_filter}").replace("u_car_model=?", f"u_car_model={model_filter}")
-            # Call the scrapping function for URL1
+            # Call the scrapping function
             # Loop through pages until url is None
             while url:
-                logging.info(f"\033[34mScrapping de la page : {url}\033[0m")
+                logging.info(f"Scrapping de la page : {url}")
                 # Get the BeautifulSoup content of the page
                 page_content = url_scrapper(url)
                 # Get next page link if exists
@@ -104,7 +104,9 @@ def main():
                 list_car = []
                 # Parse each article in the page
                 for article in articles:
-                    announcement = article_scrapper(article)
+                    #announcement = article_scrapper(article)
+                    announcement = article_scrapper_v2(article, ["link", "title", "year", "current_price", "mileage", "gearbox"])
+                    # Merge both dictionaries
                     # Init car object with values of announcement    
                     car = Cars.from_dict(announcement)
                     car.brand = brand_filter
@@ -151,12 +153,10 @@ def main():
                         logging.info(f"Date de première publication trouvée pour l'annonce : {car.link} - Date : {first_publication_date}")
                     # Pause between requests
                     time.sleep(2)
-        # Scrapping for URL2
-        if args.url2:
-            logging.info("Démarrage du scrapping pour le site URL2")
-            # Call the scrapping function for URL2
-            # from scrapping.url2_scraper import main as url2_main
-            # url2_main()
+        
+        # Calculate statistics
+        if args.calculate_stats:
+            logging.info("Démarrage du calcul des statistiques sur les données scrappées")
     
     except Exception as e:
         logging.error(f"Erreur fatale: {e}")
