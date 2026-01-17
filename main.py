@@ -163,10 +163,15 @@ def main():
             statistics = cars_dao.calculate_statistics()
             for stat, value in statistics.items():
                 logging.info(f"{stat} : {value}")
+            logging.info("Statistiques calculées avec succès")
             # Export statistics to a csv file
             stats_file = config.get("statistics_file", "statistics.csv")
             cars_dao.export_statistics_to_csv(statistics, stats_file)
-            logging.info("Statistiques calculées avec succès")
+            logging.info(f"Fichier de statistiques exporté : {stats_file}")
+            # Calculate price variation and duration on site for each car
+            logging.info("Calcul de la variation des prix et de la durée de présence sur le site pour chaque annonce")
+            cars_dao.calculate_duration_on_site_and_price_variation()
+            logging.info("Variation des prix et durée de présence sur le site calculés avec succès pour chaque annonce")
     
     except Exception as e:
         logging.error(f"Erreur fatale: {e}")

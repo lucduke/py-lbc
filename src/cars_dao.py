@@ -28,7 +28,9 @@ class CarsDAO:
                     mileage INTEGER,
                     gearbox TEXT,
                     first_publication_date TIMESTAMP DEFAULT NULL,
-                    update_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                    update_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    duration_on_site INTEGER DEFAULT NULL,
+                    price_variation REAL DEFAULT NULL
                 )
             """)
             conn.commit()
@@ -37,9 +39,9 @@ class CarsDAO:
         with sqlite3.connect(self.db_path) as conn:
             cursor = conn.cursor()
             cursor.execute("""
-                INSERT INTO cars (brand, model, link, title, year, original_price, current_price, mileage, gearbox, first_publication_date, update_date)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (car.brand, car.model, car.link, car.title, car.year, car.original_price, car.current_price, car.mileage, car.gearbox, car.first_publication_date, date.today()))
+                INSERT INTO cars (brand, model, link, title, year, original_price, current_price, mileage, gearbox, first_publication_date, update_date, duration_on_site, price_variation)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (car.brand, car.model, car.link, car.title, car.year, car.original_price, car.current_price, car.mileage, car.gearbox, car.first_publication_date, date.today(), car.duration_on_site, car.price_variation))
             conn.commit()
     
     def get_all_cars(self) -> list[Cars]:
@@ -109,3 +111,17 @@ class CarsDAO:
             writer.writeheader()
             for stat in statistics.values():
                 writer.writerow(stat)
+    
+    def calculate_duration_on_site_and_price_variation(self):
+        with sqlite3.connect(self.db_path) as conn:
+            cursor = conn.cursor()
+            cursor.execute("""
+                UPDATE cars
+                SET duration_on_site = round(julianday(update_date) - julianday(first_publication_date)),
+                    price_variation = CASE 
+                        WHEN original_price IS NOT NULL AND original_price > 0 THEN round(((current_price - original_price) / original_price) * 100, 2)
+                        ELSE NULL
+                    END
+                WHERE first_publication_date IS NOT NULL
+            """)
+            conn.commit()
