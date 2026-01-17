@@ -160,7 +160,7 @@ def article_scrapper(article: BeautifulSoup, list_var: list):
     old_price = None
     first_publication_date = None
 
-    tag = soup.find('script', type="application/json")
+    tag = article.find('script', type="application/json")
     if tag:
         data = json.loads(tag.get_text(strip=True))
         

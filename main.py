@@ -139,7 +139,9 @@ def main():
                         logging.error(f"Impossible de récupérer la page de l'annonce : {car.link}")
                         continue
                     #original_price, first_publication_date = article_scrapper_find_old_price_and_first_publication_date(article_page)
-                    original_price, first_publication_date = article_scrapper(article_page, ["old_price", "first_publication_date"])
+                    article_dict = article_scrapper(article_page, ["old_price", "first_publication_date"])
+                    original_price = article_dict.get("old_price")
+                    first_publication_date = article_dict.get("first_publication_date")
                     if original_price:
                         car.original_price = original_price
                         cars_dao.update_car(car)
