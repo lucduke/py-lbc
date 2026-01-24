@@ -18,6 +18,8 @@ class Cars:
     gearbox: str
     first_publication_date: datetime = None
     update_date: datetime = None
+    duration_on_site: int = 0  # in days
+    price_variation: float = 0.0  # in percentage
     def __str__(self) -> str:
         return f"{self.title} ({self.year}) -- {self.original_price}€ - {self.current_price}€ - {self.mileage} km - {self.gearbox} - {self.link}"
     def to_dict(self) -> dict:
@@ -32,7 +34,9 @@ class Cars:
             "mileage": self.mileage,
             "gearbox": self.gearbox,
             "first_publication_date": self.first_publication_date,
-            "update_date": self.update_date
+            "update_date": self.update_date,
+            "duration_on_site": self.duration_on_site,
+            "price_variation": self.price_variation
         }
     @classmethod
     def from_dict(cls, data: dict) -> 'Cars':
@@ -47,7 +51,9 @@ class Cars:
             mileage=data.get("mileage", 0),
             gearbox=data.get("gearbox", ""),
             first_publication_date=data.get("first_publication_date", None),
-            update_date=data.get("update_date", None)
+            update_date=data.get("update_date", None),
+            duration_on_site=data.get("duration_on_site", 0),
+            price_variation=data.get("price_variation", 0.0)
         )
 # Example usage:
 # car_data = {
@@ -61,7 +67,9 @@ class Cars:
 #     "mileage": 30000,
 #     "gearbox": "Manual",
 #     "first_publication_date": datetime(2020, 1, 1, 10, 30, 0),
-#     "update_date": datetime(2020, 1, 1, 10, 30, 0)
+#     "update_date": datetime(2020, 1, 1, 10, 30, 0),
+#     "duration_on_site": 10,
+#     "price_variation": -16.67
 # }
 # car = Cars.from_dict(car_data)
 # print(car)
