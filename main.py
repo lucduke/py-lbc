@@ -11,6 +11,7 @@ Usage:
 import logging
 import argparse
 import time
+import os
 from src.config import load_config
 from src.scrapping import url_scrapper, results_scrapper, results_scrapper_detail, article_scrapper
 from src.cars import Cars
@@ -67,7 +68,7 @@ def main():
 
         # Load the configuration
         logging.info("Chargement de la configuration")
-        config = load_config("config.json")
+        config = load_config(os.path.join(os.path.dirname(__file__), "config.json"))
         logging.info("Configuration chargée avec succès")
 
         # Initialize database connection if needed and create the cars table
@@ -82,6 +83,9 @@ def main():
             brand_filter = config.get("brand_filter", "")
             model_filter = config.get("model_filter", "")
             url = config.get("url")
+            if url is None:
+                logging.error("URL de base non trouvée dans la configuration")
+                return
             url = url.replace("u_car_brand=?", f"u_car_brand={brand_filter}").replace("u_car_model=?", f"u_car_model={model_filter}")
             # Call the scrapping function
             # Loop through pages until url is None
@@ -98,7 +102,8 @@ def main():
                     next_page = None
                     url = next_page
                 # List the articles in the page
-                articles = results_scrapper(page_content, "article", "relative h-[inherit] group/adcard")
+                # articles = results_scrapper(page_content, "article", "relative h-[inherit] group/adcard")
+                articles = results_scrapper(page_content, "div", "relative h-[inherit] group/adcard")
                 logging.info(f"Nombre d'annonces trouvées sur la page : {len(articles)}")
                 # Initialize list to store car objects
                 list_car = []
