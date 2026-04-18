@@ -3,6 +3,8 @@
 Module pour gérer les fonctions liées au scrapping
 """
 
+import logging
+import logging
 from datetime import datetime
 import requests
 import json
@@ -94,21 +96,68 @@ def results_scrapper_detail(soup: BeautifulSoup, list_var: list):
 
     for var in list_var:
         if var == "link":
-            link = soup.find("a", class_="absolute inset-0", attrs={"aria-label": "Voir l’annonce"}).get("href")
-        elif var == "title":
-            title = soup.find("h3").get_text().strip()
-        elif var == "year":
-            year = int(soup.find("p", class_="text-neutral", string="Année").find_next_sibling("p").get_text(strip=True))
-        elif var == "current_price":
-            current_price_text = soup.find('p', attrs={"data-test-id": "price"}).span.get_text(strip=True)
-            if current_price_text:
-                current_price = int(current_price_text.replace("\u202f", "").replace("€", ""))
+            link_el = soup.find("a", class_="absolute inset-0", attrs={"aria-label": "Voir l’annonce"})
+            if link_el:
+                link = link_el.get("href")
             else:
-                current_price = None
+                raise ValueError(f"Élément 'link' non trouvé dans l'article")
+        elif var == "title":
+            title_el = title_el = soup.find("span", class_="absolute inset-0 opacity-0").get("title").removeprefix("Voir l’annonce: ")
+            if title_el:
+                title = title_el
+            else:
+                raise ValueError(f"Élément 'title' non trouvé dans l'article")
+        elif var == "year":
+            year_label = soup.find("p", class_="text-neutral", string="Année")
+            if year_label:
+                year_sibling = year_label.find_next_sibling("p")
+                if year_sibling:
+                    try:
+                        year = int(year_sibling.get_text(strip=True))
+                    except ValueError:
+                        raise ValueError(f"Impossible de convertir l'année en entier dans l'article")
+                else:
+                    raise ValueError(f"Élément 'year' (sibling) non trouvé dans l'article")
+            else:
+                raise ValueError(f"Élément 'year' (label) non trouvé dans l'article")
+            
+        elif var == "current_price":
+            try:
+                price_el = soup.find("span", class_="text-success").get_text(strip=True)
+            except Exception:
+                price_el = soup.find("span", class_="").get_text(strip=True)
+                
+            if price_el:
+                try:
+                    current_price = int(price_el.replace("\u202f", "").replace("€", ""))
+                except ValueError:
+                    raise ValueError(f"Impossible de convertir le prix en entier dans l'article")
+            else:
+                raise ValueError(f"TÉlément 'span' du prix non trouvé dans l'article")
+
         elif var == "mileage":
-            mileage = int(soup.find("p", class_="text-neutral", string="Kilométrage").find_next_sibling("p").get_text(strip=True).replace(" km",""))
+            mileage_label = soup.find("p", class_="text-neutral", string="Kilométrage")
+            if mileage_label:
+                mileage_sibling = mileage_label.find_next_sibling("p")
+                if mileage_sibling:
+                    try:
+                        mileage = int(mileage_sibling.get_text(strip=True).replace(" km", ""))
+                    except ValueError:
+                        raise ValueError(f"Impossible de convertir le kilométrage en entier dans l'article")
+                else:
+                    raise ValueError(f"Élément 'mileage' (sibling) non trouvé dans l'article")
+            else:
+                raise ValueError(f"Élément 'mileage' (label) non trouvé dans l'article")
         elif var == "gearbox":
-            gearbox = soup.find("p", class_="text-neutral", string="Boîte de vitesse").find_next_sibling("p").get_text(strip=True)
+            gearbox_label = soup.find("p", class_="text-neutral", string="Boîte de vitesse")
+            if gearbox_label:
+                gearbox_sibling = gearbox_label.find_next_sibling("p")
+                if gearbox_sibling:
+                    gearbox = gearbox_sibling.get_text(strip=True)
+                else:
+                    raise ValueError(f"Élément 'gearbox' (sibling) non trouvé dans l'article")
+            else:
+                raise ValueError(f"Élément 'gearbox' (label) non trouvé dans l'article")
 
     return {"brand": "", "model": "", "link": link, "title": title, "year": year, "original_price": None, "current_price": current_price, "mileage": mileage, "gearbox": gearbox}
 

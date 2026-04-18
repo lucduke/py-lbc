@@ -109,8 +109,12 @@ def main():
                 list_car = []
                 # Parse each article in the page
                 for article in articles:
-                    #announcement = article_scrapper(article)
-                    announcement = results_scrapper_detail(article, ["link", "title", "year", "current_price", "mileage", "gearbox"])
+                    try:
+                        announcement = results_scrapper_detail(article, ["link", "title", "year", "current_price", "mileage", "gearbox"])
+                    except ValueError as e:
+                        logging.error(f"Arrêt du programme : {e}")
+                        logging.error(f"Article concerné : {article}")
+                        return
                     # Merge both dictionaries
                     # Init car object with values of announcement    
                     car = Cars.from_dict(announcement)
